@@ -31,12 +31,17 @@
     *   *Term Structure Contango/Backwardation:* Analyzing the VIX futures term structure or individual equity IV term structures for volatility regime identification.
 *   **Options Flow & Unusual Activity:** Real-time scanning for block trades, sweeping orders, and aggressive out-of-the-money (OTM) buying. Comparing options volume vs. OI changes to distinguish between opening (accumulation) and closing (distribution) of positions.
 *   **News, Event, & Corporate Action Logic:** Algorithms to parse news sentiment, react to earnings surprises, and handle the mathematical impacts of dividends (adjusting forwards and put-call parity) and splits.
-*   **Strategy Modules:** Pluggable architecture for different strategies:
-    *   *Volatility Arbitrage:* Trading discrepancies between implied and realized volatility (e.g., dispersion trading).
-    *   *Market Making:* Providing liquidity by quoting bid and ask prices and capturing the spread.
-    *   *Directional/Momentum:* Using quantitative signals, breakout detection, and trend news to predict underlying asset movement and leverage options (e.g., buying calls on a high-volume breakout).
-    *   *Order Flow/OI Strategies:* Trading based on significant shifts in Open Interest, large block trades, or dark pool activity.
-    *   *Income Generation:* Automated covered calls, cash-secured puts, iron condors.
+*   **Structured Strategy Plug-in Architecture:** A highly modular, event-driven framework where strategies are independent plugins adhering to a strict interface.
+    *   *Lifecycle Methods:* Every plugin must implement standard lifecycle hooks: `Initialize()`, `OnStart()`, `OnMarketData(Tick/Bar/Greeks)`, `OnOrderUpdate(Status)`, `OnTimer()`, and `OnStop()`.
+    *   *Sandboxed Execution:* Plugins execute within an isolated context, interacting with the core engine solely through standard APIs to request data or submit orders, preventing a single rogue strategy from crashing the system.
+    *   *Standardized Data Payloads:* Plugins receive strictly typed, normalized data structs (e.g., `OptionChainSnapshot`, `GreeksUpdate`, `OrderBookL2`).
+    *   *Dynamic Loading:* The system can hot-swap, load, or unload strategy plugins during runtime without restarting the core engine.
+    *   *Strategy Types (Examples):*
+        *   *Volatility Arbitrage:* Trading discrepancies between implied and realized volatility (e.g., dispersion trading).
+        *   *Market Making:* Providing liquidity by quoting bid and ask prices and capturing the spread.
+        *   *Directional/Momentum:* Using quantitative signals, breakout detection, and trend news to predict underlying asset movement and leverage options (e.g., buying calls on a high-volume breakout).
+        *   *Order Flow/OI Strategies:* Trading based on significant shifts in Open Interest, large block trades, or dark pool activity.
+        *   *Income Generation:* Automated covered calls, cash-secured puts, iron condors.
 *   **Alpha Generation:** Machine learning models (e.g., Random Forests, LSTMs) to identify patterns in market data, options flow, and news to generate trading signals.
 
 ### 1.4 Execution Management System (EMS)
