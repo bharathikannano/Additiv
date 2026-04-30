@@ -44,13 +44,29 @@
         *   *Income Generation:* Automated covered calls, cash-secured puts, iron condors.
 *   **Alpha Generation:** Machine learning models (e.g., Random Forests, LSTMs) to identify patterns in market data, options flow, and news to generate trading signals.
 
-### 1.4 Execution Management System (EMS)
+### 1.4 AI-Driven Autonomous Quant Agent (Meta-Plugin)
+A specialized overarching AI agent plugin designed for end-to-end strategy lifecycle management and continuous self-improvement.
+*   **Contextual Code Understanding & Plan Review:** The agent acts as an integrated AI developer. It can review the core system plan, ask clarifying questions to operators, and deeply understand the codebase to contextualize how strategies interact with the EMS and RMS.
+*   **Automated Log & Report Analysis:**
+    *   *Backtest Review:* Automatically ingests backtest reports, identifying overfitting, excessive drawdown periods, and hidden slippage.
+    *   *Paper Trade Monitoring:* Analyzes paper trading execution logs in real-time to identify discrepancies between theoretical and realized performance (e.g., routing latency issues).
+*   **Continuous Improvement Loop:** The agent uses reinforcement learning or iterative prompting to actively refactor and improve existing strategy plugins based on log analysis.
+    *   *A/B Testing & Rollback:* Deploys improved strategies in parallel (shadow mode), compares performance metrics statistically, and automatically rolls back changes if the new iteration underperforms.
+*   **Discipline & Set-up Architecture:**
+    *   Enforces strict psychological/trading discipline rules systematically (e.g., preventing "revenge trading" algorithms from increasing size after a loss, hard-coding max daily loss stops).
+    *   Optimizes setups to maximize profit factor and win rate based on historical edge identification.
+*   **Smart Execution Engine:**
+    *   *Smart Watch:* Autonomously curates a dynamic watchlist of underlying assets experiencing unusual volatility, flow, or breaking news.
+    *   *Smart Trade Calls (Entry):* Waits for statistical confirmation (e.g., pullback to VWAP + volume confirmation) rather than executing purely on a raw signal, reducing false entries.
+    *   *Smart Exit:* Dynamic trailing stops based on real-time ATR (Average True Range) or options gamma profiles, rather than static percentage exits, maximizing trend capture.
+
+### 1.5 Execution Management System (EMS)
 *   **Order Routing:** Smart Order Routing (SOR) to direct orders to the optimal exchange for the best execution price and speed.
 *   **Execution Algorithms:** Implementation of TWAP, VWAP, and custom algorithms for options to minimize market impact when executing large orders.
 *   **API Integration:** Secure, low-latency connections to brokerage APIs (e.g., Interactive Brokers FIX API, TD Ameritrade API).
 *   **Order Tracking:** Real-time monitoring of order status (submitted, partial fill, filled, rejected, canceled).
 
-### 1.5 Portfolio Risk Management & Regulatory Mandates (PMS/RMS)
+### 1.6 Portfolio Risk Management & Regulatory Mandates (PMS/RMS)
 *   **Real-time Position & Greek Monitoring:** Beta-weighted tracking of Delta, Gamma, Theta, Vega, and Rho across the entire portfolio to a benchmark (e.g., SPY).
 *   **Margin Calculation Engine:** Real-time, rigorous estimation of margin requirements using specific broker methodologies:
     *   *Regulation T (Reg T):* Rule-based margin for standard accounts.
@@ -62,7 +78,7 @@
     *   *Liquidity/Wideness Checks:* Rejecting automated entry into strikes with unacceptably wide bid-ask spreads to prevent immediate slippage loss.
 *   **Stress Testing & Value at Risk (VaR):** Simulating extreme market scenarios (e.g., a 20% underlying drop combined with a 50% IV spike) and calculating Historical and Monte Carlo VaR.
 
-## 1.6 Exchange Mechanics & Clearing
+## 1.7 Exchange Mechanics & Clearing
 *   **Routing Mechanics:** Understanding Maker-Taker pricing models across exchanges (CBOE, ISE, PHLX, BOX, MIAX) to optimize routing for rebates vs. execution speed.
 *   **Clearing & Settlement:** Interfacing with clearing firms and understanding the Options Clearing Corporation (OCC) overnight batch processing and settlement cycles (T+1).
 
