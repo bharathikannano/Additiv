@@ -4,35 +4,83 @@
 
 ### 1.1 Data Ingestion Layer
 *   **Real-time Market Data:** Integration with low-latency data providers (e.g., OPRA, Databento, Polygon.io, Interactive Brokers API) for tick-level options chains, underlying asset prices, and Greeks.
-*   **Historical Data:** Storage and retrieval system for backtesting (e.g., TickData, FirstRate Data). Requires robust time-series databases (e.g., InfluxDB, TimescaleDB, kdb+).
-*   **Alternative Data:** Sentiment analysis feeds, macroeconomic indicators, and corporate earnings calendars.
+*   **Derivatives & Market Microstructure Data:** Real-time extraction of Open Interest (OI), options volume, bid/ask sizes, and order book depth (L2/L3 data) for the underlying and options.
+*   **Historical Data:** Storage and retrieval system for backtesting (e.g., TickData, FirstRate Data). Requires robust time-series databases (e.g., InfluxDB, TimescaleDB, kdb+). Must include historical OI and volume for accurate backtesting.
+*   **Alternative & News Data:** Real-time news feeds (e.g., Bloomberg, Reuters, Benzinga) for sentiment analysis and trend-following signals, macroeconomic indicators, and corporate earnings/events calendars.
 *   **Data Normalization:** A process to standardize data formats from various sources into a unified internal format.
 
-### 1.2 Quantitative Research & Backtesting Engine
-*   **Simulation Environment:** An event-driven backtester that accurately simulates bid-ask spread, slippage, latency, and trading commissions.
-*   **Options Pricing Models:** Implementation of Black-Scholes, Binomial Tree, and Monte Carlo simulations for theoretical pricing and Greeks calculation.
-*   **Volatility Modeling:** Tools for implied volatility (IV) surface generation, historical volatility tracking, and forecasting (e.g., GARCH models).
-*   **Parameter Optimization:** Walk-forward optimization and out-of-sample testing to prevent overfitting.
+### 1.2 Quantitative Research, Mathematics & Backtesting Engine
+*   **Simulation Environment:** An event-driven backtester that accurately simulates bid-ask spread, slippage, latency, order queue position, and trading commissions.
+*   **Core Options Mathematics & Pricing Models:**
+    *   *European Options:* Black-Scholes-Merton (BSM) model implementation.
+    *   *American Options:* Binomial/Trinomial Tree models (e.g., Cox-Ross-Rubinstein) and finite difference methods for early exercise premium calculation.
+    *   *Complex Payoffs:* Monte Carlo simulations for path-dependent exotics.
+*   **Advanced Greeks Calculation:** Beyond first-order Greeks (Delta, Gamma, Theta, Vega, Rho), the system must calculate higher-order Greeks (Vanna, Charm, Volga, Speed, Color) to precisely manage multi-leg portfolio risk across varying time and volatility horizons.
+*   **Volatility Modeling & Surface Analytics:**
+    *   Dynamic generation of the Implied Volatility (IV) surface.
+    *   *Volatility Skew & Smile Analysis:* Tracking horizontal (term structure) and vertical (strike skew) IV relationships.
+    *   Historical volatility tracking and forecasting using GARCH/EGARCH or local volatility models.
+*   **Parameter Optimization:** Walk-forward optimization, Monte Carlo cross-validation, and out-of-sample testing to prevent curve-fitting and overfitting.
 
-### 1.3 Signal Generation & Strategy Engine
-*   **Strategy Modules:** Pluggable architecture for different strategies:
-    *   *Volatility Arbitrage:* Trading discrepancies between implied and realized volatility (e.g., dispersion trading).
-    *   *Market Making:* Providing liquidity by quoting bid and ask prices and capturing the spread.
-    *   *Directional:* Using quantitative signals to predict underlying asset movement and leverage options.
-    *   *Income Generation:* Automated covered calls, cash-secured puts, iron condors.
-*   **Alpha Generation:** Machine learning models (e.g., Random Forests, LSTMs) to identify patterns in market data and generate trading signals.
+### 1.3 Advanced Analysis & Signal Generation Engine
+*   **Technical Analysis & Pattern Recognition:** Built-in indicators for detecting breakouts, support/resistance levels, trend lines, and momentum shifts (RSI, MACD, Bollinger Bands, Volume Profile) on the underlying asset.
+*   **Options-Specific Microstructure Analysis:**
+    *   *Max Pain Calculation:* Identifying the strike price with the most open contracts to predict pinning behavior near expiration.
+    *   *Put/Call Ratios (Volume & OI):* Sentiment indicators tracking overall market leaning.
+    *   *Gamma Exposure (GEX) & Dealer Positioning:* Mapping dealer hedging flows to identify key sticky levels, reflexivity, and potential "gamma squeezes".
+    *   *Term Structure Contango/Backwardation:* Analyzing the VIX futures term structure or individual equity IV term structures for volatility regime identification.
+*   **Options Flow & Unusual Activity:** Real-time scanning for block trades, sweeping orders, and aggressive out-of-the-money (OTM) buying. Comparing options volume vs. OI changes to distinguish between opening (accumulation) and closing (distribution) of positions.
+*   **News, Event, & Corporate Action Logic:** Algorithms to parse news sentiment, react to earnings surprises, and handle the mathematical impacts of dividends (adjusting forwards and put-call parity) and splits.
+*   **Structured Strategy Plug-in Architecture:** A highly modular, event-driven framework where strategies are independent plugins adhering to a strict interface.
+    *   *Lifecycle Methods:* Every plugin must implement standard lifecycle hooks: `Initialize()`, `OnStart()`, `OnMarketData(Tick/Bar/Greeks)`, `OnOrderUpdate(Status)`, `OnTimer()`, and `OnStop()`.
+    *   *Sandboxed Execution:* Plugins execute within an isolated context, interacting with the core engine solely through standard APIs to request data or submit orders, preventing a single rogue strategy from crashing the system.
+    *   *Standardized Data Payloads:* Plugins receive strictly typed, normalized data structs (e.g., `OptionChainSnapshot`, `GreeksUpdate`, `OrderBookL2`).
+    *   *Dynamic Loading:* The system can hot-swap, load, or unload strategy plugins during runtime without restarting the core engine.
+    *   *Strategy Types (Examples):*
+        *   *Volatility Arbitrage:* Trading discrepancies between implied and realized volatility (e.g., dispersion trading).
+        *   *Market Making:* Providing liquidity by quoting bid and ask prices and capturing the spread.
+        *   *Directional/Momentum:* Using quantitative signals, breakout detection, and trend news to predict underlying asset movement and leverage options (e.g., buying calls on a high-volume breakout).
+        *   *Order Flow/OI Strategies:* Trading based on significant shifts in Open Interest, large block trades, or dark pool activity.
+        *   *Income Generation:* Automated covered calls, cash-secured puts, iron condors.
+*   **Alpha Generation:** Machine learning models (e.g., Random Forests, LSTMs) to identify patterns in market data, options flow, and news to generate trading signals.
 
-### 1.4 Execution Management System (EMS)
+### 1.4 AI-Driven Autonomous Quant Agent (Meta-Plugin)
+A specialized overarching AI agent plugin designed for end-to-end strategy lifecycle management and continuous self-improvement.
+*   **Contextual Code Understanding & Plan Review:** The agent acts as an integrated AI developer. It can review the core system plan, ask clarifying questions to operators, and deeply understand the codebase to contextualize how strategies interact with the EMS and RMS.
+*   **Automated Log & Report Analysis:**
+    *   *Backtest Review:* Automatically ingests backtest reports, identifying overfitting, excessive drawdown periods, and hidden slippage.
+    *   *Paper Trade Monitoring:* Analyzes paper trading execution logs in real-time to identify discrepancies between theoretical and realized performance (e.g., routing latency issues).
+*   **Continuous Improvement Loop:** The agent uses reinforcement learning or iterative prompting to actively refactor and improve existing strategy plugins based on log analysis.
+    *   *A/B Testing & Rollback:* Deploys improved strategies in parallel (shadow mode), compares performance metrics statistically, and automatically rolls back changes if the new iteration underperforms.
+*   **Discipline & Set-up Architecture:**
+    *   Enforces strict psychological/trading discipline rules systematically (e.g., preventing "revenge trading" algorithms from increasing size after a loss, hard-coding max daily loss stops).
+    *   Optimizes setups to maximize profit factor and win rate based on historical edge identification.
+*   **Smart Execution Engine:**
+    *   *Smart Watch:* Autonomously curates a dynamic watchlist of underlying assets experiencing unusual volatility, flow, or breaking news.
+    *   *Smart Trade Calls (Entry):* Waits for statistical confirmation (e.g., pullback to VWAP + volume confirmation) rather than executing purely on a raw signal, reducing false entries.
+    *   *Smart Exit:* Dynamic trailing stops based on real-time ATR (Average True Range) or options gamma profiles, rather than static percentage exits, maximizing trend capture.
+
+### 1.5 Execution Management System (EMS)
 *   **Order Routing:** Smart Order Routing (SOR) to direct orders to the optimal exchange for the best execution price and speed.
 *   **Execution Algorithms:** Implementation of TWAP, VWAP, and custom algorithms for options to minimize market impact when executing large orders.
 *   **API Integration:** Secure, low-latency connections to brokerage APIs (e.g., Interactive Brokers FIX API, TD Ameritrade API).
 *   **Order Tracking:** Real-time monitoring of order status (submitted, partial fill, filled, rejected, canceled).
 
-### 1.5 Portfolio & Risk Management System (PMS/RMS)
-*   **Real-time Position Monitoring:** Tracking delta, gamma, theta, vega, and rho across the entire portfolio (Portfolio Greeks).
-*   **Margin Calculation:** Real-time estimation of margin requirements (Reg T, Portfolio Margin).
-*   **Risk Limits:** Hard stops on max drawdown, max position size, sector exposure, and Greeks limits (e.g., keeping the portfolio delta neutral).
-*   **Stress Testing:** Simulating market crashes, volatility spikes, and correlation breakdowns.
+### 1.6 Portfolio Risk Management & Regulatory Mandates (PMS/RMS)
+*   **Real-time Position & Greek Monitoring:** Beta-weighted tracking of Delta, Gamma, Theta, Vega, and Rho across the entire portfolio to a benchmark (e.g., SPY).
+*   **Margin Calculation Engine:** Real-time, rigorous estimation of margin requirements using specific broker methodologies:
+    *   *Regulation T (Reg T):* Rule-based margin for standard accounts.
+    *   *Portfolio Margin (TIMS/Customer Portfolio Margin):* Risk-based margin calculations requiring internal implementation of the OCC's Theoretical Intermarket Margining System to optimize capital efficiency.
+*   **Strict Risk Limits & Circuit Breakers:** Hard stops on max drawdown, max position size, sector exposure, and strict portfolio Greek limits (e.g., automated delta-hedging execution if portfolio delta breaches a threshold).
+*   **Options-Specific Risk Management:**
+    *   *Pin Risk:* Automated logic to close out or hedge at-the-money (ATM) options approaching expiration to avoid post-market assignment uncertainty.
+    *   *Dividend Risk:* Identifying ITM put/call scenarios where early exercise is economically optimal or likely due to an upcoming ex-dividend date.
+    *   *Liquidity/Wideness Checks:* Rejecting automated entry into strikes with unacceptably wide bid-ask spreads to prevent immediate slippage loss.
+*   **Stress Testing & Value at Risk (VaR):** Simulating extreme market scenarios (e.g., a 20% underlying drop combined with a 50% IV spike) and calculating Historical and Monte Carlo VaR.
+
+## 1.7 Exchange Mechanics & Clearing
+*   **Routing Mechanics:** Understanding Maker-Taker pricing models across exchanges (CBOE, ISE, PHLX, BOX, MIAX) to optimize routing for rebates vs. execution speed.
+*   **Clearing & Settlement:** Interfacing with clearing firms and understanding the Options Clearing Corporation (OCC) overnight batch processing and settlement cycles (T+1).
 
 ## 2. Technology Stack Recommendations
 *   **Programming Languages:**
@@ -72,7 +120,11 @@
 4. Iteratively refine strategies, optimize code, and expand to new assets.
 
 ## 4. Key Challenges & Considerations
-*   **Options Data Volume:** Options data is massive compared to equities due to multiple strikes and expirations. Efficient data handling is paramount.
-*   **Latency:** For strategies like market making, nanosecond latency matters. System architecture must be highly optimized.
-*   **Early Assignment Risk:** Automated systems must handle edge cases like early assignment of American options, corporate actions, and dividend risk.
-*   **Regulatory Compliance:** Ensure adherence to exchange rules, SEC regulations, and pattern day trader (PDT) rules.
+*   **Combinatorial Explosion of Data:** The sheer volume of data generated by thousands of strikes, multiple expirations, continuous Greek updates, and order book changes requires exceptional parallel processing, memory management, and compression algorithms.
+*   **Latency & Execution Speed:** For strategies like market making or trading fast breakouts, microsecond or nanosecond latency matters. System architecture must be highly optimized (e.g., C/C++, exchange colocation, FPGA/hardware acceleration).
+*   **Signal Noise vs. Real Flow:** Distinguishing between speculative directional bets, complex multi-leg institutional hedges, and market maker repositioning is incredibly difficult and requires sophisticated statistical analysis.
+*   **Edge Case Handling (The "Tails"):** The system must flawlessly handle rare but impactful events: early assignment, unexpected trading halts, stock splits, special dividends, and catastrophic data feed interruptions.
+*   **Regulatory Compliance & Auditability:**
+    *   Strict adherence to SEC, FINRA, and exchange-specific rules (e.g., Regulation NMS, Market Access Rule 15c3-5).
+    *   Systems must maintain immutable, append-only logs of every decision, signal, quote, and execution for auditability and post-mortem analysis.
+    *   Adherence to Pattern Day Trader (PDT) rules if applicable to the account size.
